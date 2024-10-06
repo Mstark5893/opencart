@@ -1,56 +1,66 @@
-pipeline{
-
+pipeline
+{
     agent any
 
-    stages{
+    tools{
+    	maven 'maven'
+        }
 
-        stage("Build"){
-            steps{
-                echo("Builiding the project")
+    stages
+    {
+        stage('Build')
+        {
+            steps
+            {
+                 git 'https://github.com/jglick/simple-maven-project-with-tests.git'
+                 bat "mvn -Dmaven.test.failure.ignore=true clean package"
+            }
+            post
+            {
+                success
+                {
+                    junit '**/target/surefire-reports/TEST-*.xml'
+                    archiveArtifacts 'target/*.jar'
+                }
             }
         }
 
-        stage("Unit test"){
-            steps{
-                echo("Run UTs")
+
+        stage('Regression Automation Test') {
+            steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    git 'https://github.com/Mstark5893/opencart.git'
+                    bat "mvn clean install"
+                }
             }
         }
 
-        stage("Deploy to Dev "){
-            steps{
-                echo("Deploy to Dev")
+
+        stage('Publish Allure Reports') {
+           steps {
+                script {
+                    allure([
+                        includeProperties: false,
+                        jdk: '',
+                        properties: [],
+                        reportBuildPolicy: 'ALWAYS',
+                        results: [[path: '/allure-results']]
+                    ])
+                }
             }
         }
 
-        stage("Deploy to QA "){
-            steps{
-                echo("Deploy to QA")
-            }
-        }
 
-        stage("Run the smoke test"){
+        stage('Publish Extent Report'){
             steps{
-                echo("Run the smoke test")
-            }
-        }
-
-         stage("Run the sanity tests "){
-            steps{
-                echo("Run the sanity tests")
-            }
-        }
-
-          stage("Run the regression tests "){
-            steps{
-                echo("Run the regression tests")
-            }
-        }
-
-      stage("Deploy to Prod "){
-            steps{
-                echo("Deploy to Prod")
+                     publishHTML([allowMissing: false,
+                                  alwaysLinkToLastBuild: false,
+                                  keepAll: false,
+                                  reportDir: 'build',
+                                  reportFiles: 'TestExecutionReport.html',
+                                  reportName: 'HTML Extent Report',
+                                  reportTitles: ''])
             }
         }
     }
-
 }
