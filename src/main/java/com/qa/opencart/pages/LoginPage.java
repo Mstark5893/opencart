@@ -52,7 +52,6 @@ public class LoginPage {
 
     @Step("Login with username : {0} and password : {1}")
     public AccountsPage doLogin(String un, String pswrd) {
-        System.out.println("Credentaials are :" + un + ":" + pswrd);
         elementUtil.doSendKeys(emailId, un);
         elementUtil.doSendKeys(password, pswrd);
         elementUtil.doClick(loginbtn);
